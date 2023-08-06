@@ -1,67 +1,81 @@
-class ProductManager {
+import {promises as fs} from 'fs';
 
-    #id
-    #products
+const path = './products.json'
 
-    constructor() {
-        this.#id = 1;
-        this.#products = [];
+const getProducts = async () => {
+    const prodsFromFile=JSON.parse(await fs.readFile(path, 'utf-8'))
+    console.log(prodsFromFile)
+}
+
+const getProductById = async (id) =>{
+    const prodsFromFile=JSON.parse(await fs.readFile(path, 'utf-8'))
+    const product = prodsFromFile.find(product => product.ID === id)
+
+    if (product) 
+        console.log(product)
+    else
+        console.log( `Error! El ID: ${id} no existe`)
+    ;
+}
+
+const deleteProduct  =async (id)=>{
+    const prodsFromFile=JSON.parse(await fs.readFile(path, 'utf-8'))
+    const product = prodsFromFile.find(product => product.ID === id)
+
+    if (product) {
+        await fs.writeFile(path,JSON.stringify(prodsFromFile.filter(prod => prod.ID!=id)))
+
     }
+    else
+        console.log( `Error! El ID: ${id} no existe`)
+    ;
+}
 
-    addProduct({ code, stock, title, description, price, img }) {
 
-        const siExiste = this.siExiste('code', code);
+const updateProduct = async (id, product) =>{
+    const prodsFromFile=JSON.parse(await fs.readFile(path, 'utf-8'))
+    const index = prodsFromFile.findIndex(product => product.ID === id)
 
-        if (siExiste) {
-            return `El codigo: ${code} ingresado ya existe`
-        };
+    if (index !=-1) {
+        prodsFromFile[index].title=product.title
+        prodsFromFile[index].stock=product.stock
+        prodsFromFile[index].code=product.code
+        prodsFromFile[index].description=product.description
+        prodsFromFile[index].price=product.price
+        prodsFromFile[index].img=product.img
+        await fs.writeFile(path,JSON.stringify(prodsFromFile))
 
-        if (  (code =='' || code==null || code== undefined)||  (stock =='' || stock==null || stock== undefined) || (title =='' || title==null || title== undefined)|| (description =='' || description==null || description== undefined) ||  (price =='' || price==null || price== undefined) ||  (img =='' || img==null || img== undefined) ) {
+
+    }
+    else
+        console.log( `Error! El ID: ${id} no existe`)
+    ;
+}
+
+const addProduct=async (producto)=>{
+    const prodsFromFile=JSON.parse(await fs.readFile(path, 'utf-8'))
+    const product = prodsFromFile.find(product => product.code === producto.code)
+    let maxID = prodsFromFile.reduce((max, product) => product.ID > max ? product.ID : max, 0);
+
+
+    if (product) 
+        console.log(`Error! El producto con el código: ${product.code} ya existe`)
+    else{
+        if (  (producto.code =='' || producto.code==null || producto.code== undefined)||  (producto.stock =='' || producto.stock==null || producto.stock== undefined) || (producto.title =='' || producto.title==null || producto.title== undefined)|| (producto.description =='' || producto.description==null || producto.description== undefined) ||  (producto.price =='' || producto.price==null || producto.price== undefined) ||  (producto.img =='' || producto.img==null || producto.img== undefined) ) {
             //chequeo que existan todos los campos
             return 'Todos las propiedades son obligatorias'
         };
-
-        if (!siExiste) {
-            this.#products.push({
-                id: this.#id++,
-                code,
-                stock,
-                title,
-                description,
-                price,
-                img
-            })
-            return `El producto ${title} fue añadido correctamente`
-        };
+        producto.ID=maxID + 1
+        prodsFromFile.push(producto)
+        await fs.writeFile(path,JSON.stringify(prodsFromFile))
     }
-
-    getProducts() {
-        if (!this.#products.length){
-            console.log(this.#products
-                );
-            return `No hay productos`;
-        }
-        else{
-        return this.#products;
-        }
-    }
-
-    getProductById(id) {
-        const product = this.#products.find(product => product.id === id);
-
-        if (!product) {
-            return `Error! El ID: ${id} no existe`
-        };
-
-        return product;
-    }
-
-    siExiste(key, value) {
-        return this.#products.find(product => product[key] === value)
-    };
+        
+    ;
+    
 }
 
 const article = {
+   
     code: 'articlulo1',
     stock: 100,
     title: 'Mate',
@@ -87,15 +101,23 @@ const article3 = {
 };
 
 
-const product = new ProductManager();
-console.log(product.getProducts()); //listo productos
-console.log(product.addProduct(article));//agrego articulos
-console.log(product.addProduct(article2));//agrego articulos
-console.log(product.addProduct(article3));//agrego articulos
+//const product = new ProductManager();
+await addProduct(article);
+ console.log('Listo productos:'+ getProducts() ); //listo productos
+await addProduct(article2);
+ console.log('Busco Producto 1'+ getProductById(1));
+console.log('Busco Producto 3'+ getProductById(3));
+await addProduct(article3);
+console.log('Busco Producto 3'+ getProductById(3));
+await updateProduct(2,{
+    code: 'articlulo2',
+    stock: 200,
+    title: 'Mate2',
+    description: 'Mate 3D Plímero',
+    price: 66000,
+    img: './imagen' 
+});
+console.log('Listo productos:'+ getProducts() ); //listo productos
+await deleteProduct(3);
+console.log('Listo productos:'+ getProducts() ); //listo productos
 
-console.log(product.getProducts());
-console.log(product.addProduct(article));//intento agregar el mismo articulo
-console.log(product.getProductById(1)); //Busco articulo con el id 1
-console.log(product.getProductById(2));//busco articulo con el id 2
-console.log(product.getProductById(3));//busco articulo con el id 3
-console.log(product.getProducts());
